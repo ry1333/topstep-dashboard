@@ -157,7 +157,7 @@ export default function Analytics() {
       </Section>
 
       {/* Two rankings side by side */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 56 }}>
+      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 56 }}>
         <Section label="By instrument">
           <BarRanking data={bySymbol} />
         </Section>
@@ -172,7 +172,7 @@ export default function Analytics() {
       </Section>
 
       {/* Best / Worst — editorial style */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 56 }}>
+      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 56 }}>
         {[{ label: 'Best trades', data: best5, pos: true }, { label: 'Worst trades', data: worst5, pos: false }].map(({ label, data, pos }) => (
           <Section key={label} label={label}>
             {data.length === 0 ? (

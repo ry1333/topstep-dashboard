@@ -106,7 +106,7 @@ export default function Dashboard() {
       </div>
 
       {/* P&L strip — spacing separates, no dividers */}
-      <div style={{
+      <div className="grid-responsive" style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         gap: 40,
@@ -135,7 +135,7 @@ export default function Dashboard() {
       </div>
 
       {/* Split: open positions + recent trades */}
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 48, paddingTop: 8 }}>
+      <div className="grid-responsive-2" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 48, paddingTop: 8 }}>
 
         {/* Open positions */}
         <div>

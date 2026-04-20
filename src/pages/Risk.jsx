@@ -106,7 +106,7 @@ export default function Risk() {
       </div>
 
       {/* Three text-forward limit stats */}
-      <div style={{
+      <div className="grid-responsive" style={{
         display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
         gap: 44, paddingTop: 28,
         borderTop: '1px solid var(--border)',
@@ -143,7 +143,7 @@ export default function Risk() {
             ${INST_LIMIT} limit each
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+        <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
           {SYMS.map(s => {
             const loss = Math.abs(Math.min(0, todayTrades.filter(t => t.symbol === s).reduce((a, t) => a + t.pnl, 0)))
             const pct  = Math.min(1, loss / INST_LIMIT)

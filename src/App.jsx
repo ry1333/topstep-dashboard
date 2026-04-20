@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
+import { useBotStatus } from './hooks/useBotStatus'
 import Sidebar from './components/Sidebar'
 import ToastContainer from './components/Toast'
 import CommandPalette from './components/CommandPalette'
@@ -10,11 +12,38 @@ import Analytics from './pages/Analytics'
 import Risk from './pages/Risk'
 import Settings from './pages/Settings'
 
-function Layout({ children }) {
+function MobileTopbar({ onOpen }) {
+  const { status } = useBotStatus()
+  const isRunning = status?.is_running ?? false
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar />
-      <main style={{ marginLeft: 220, flex: 1, padding: '32px 36px', minHeight: '100vh', maxWidth: 'calc(100vw - 220px)' }}>
+    <div className="mobile-topbar">
+      <button className="hamburger" onClick={onOpen} aria-label="Open menu">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+          <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
+        </svg>
+      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+        <div style={{ width: 22, height: 22, borderRadius: 5, background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+        </div>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', letterSpacing: '-0.025em' }}>TopstepX</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: isRunning ? 'var(--profit)' : 'var(--t3)', fontFamily: 'var(--mono)' }}>
+        <span className={isRunning ? 'dot-live' : ''} style={{ width: 6, height: 6, borderRadius: '50%', background: isRunning ? 'var(--profit)' : 'var(--t4)' }} />
+        {isRunning ? 'live' : 'off'}
+      </div>
+    </div>
+  )
+}
+
+function Layout({ children }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  return (
+    <div className="layout-shell">
+      <MobileTopbar onOpen={() => setMenuOpen(true)} />
+      {menuOpen && <div className="sidebar-backdrop" onClick={() => setMenuOpen(false)} />}
+      <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <main className="layout-main">
         {children}
       </main>
       <ToastContainer />

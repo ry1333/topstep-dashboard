@@ -11,17 +11,19 @@ const nav = [
   { to: '/settings',  label: 'Settings',   icon: <SettingsIcon /> },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ open = false, onClose = () => {} }) {
   const { user, signOut }       = useAuth()
-  const { status, sendCommand } = useBotStatus()
+  const { status, sendCommand, pending } = useBotStatus()
   const isRunning = status?.is_running ?? false
+  const isPending = pending != null
 
   function openCmdK() {
     window.dispatchEvent(new Event('cmdk:open'))
+    onClose()
   }
 
   return (
-    <aside style={{
+    <aside className={`sidebar-aside${open ? ' open' : ''}`} style={{
       width: 220,
       minHeight: '100vh',
       background: '#000',
@@ -82,6 +84,7 @@ export default function Sidebar() {
       <nav style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1 }}>
         {nav.map(({ to, label, icon }) => (
           <NavLink key={to} to={to} end={to === '/'}
+            onClick={onClose}
             className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
             {icon}
             {label}
@@ -106,6 +109,7 @@ export default function Sidebar() {
             </div>
           </div>
           <button
+            disabled={isPending}
             onClick={() => {
               sendCommand(isRunning ? 'stop' : 'start')
               toast(isRunning ? 'Stop sent' : 'Start sent', 'info')
@@ -113,14 +117,16 @@ export default function Sidebar() {
             style={{
               width: '100%', padding: '7px 0', fontSize: 11.5, fontWeight: 500,
               background: 'transparent',
-              color: isRunning ? 'var(--loss)' : 'var(--profit)',
-              border: `1px solid ${isRunning ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.3)'}`,
+              color: isPending ? 'var(--t3)' : isRunning ? 'var(--loss)' : 'var(--profit)',
+              border: `1px solid ${isPending ? 'var(--border2)' : isRunning ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.3)'}`,
               borderRadius: 7,
-              cursor: 'pointer',
+              cursor: isPending ? 'not-allowed' : 'pointer',
               transition: 'all 0.12s',
               letterSpacing: '-0.01em',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             }}>
-            {isRunning ? 'Stop Bot' : 'Start Bot'}
+            {isPending && <span className="spinner" />}
+            {isPending ? (pending === 'start' ? 'Starting…' : 'Stopping…') : (isRunning ? 'Stop Bot' : 'Start Bot')}
           </button>
         </div>
 

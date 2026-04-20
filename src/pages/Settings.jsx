@@ -3,8 +3,9 @@ import { toast } from '../components/Toast'
 import { useBotStatus } from '../hooks/useBotStatus'
 
 export default function Settings() {
-  const { status, sendCommand } = useBotStatus()
+  const { status, sendCommand, pending } = useBotStatus()
   const isRunning = status?.is_running ?? false
+  const isPending = pending != null
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 52 }} className="fade-up">
@@ -88,11 +89,17 @@ export default function Settings() {
             </div>
 
             <button
+              disabled={isPending}
               onClick={() => { sendCommand(isRunning ? 'stop' : 'start'); toast(isRunning ? 'Stop sent' : 'Start sent', 'info') }}
-              className={`btn ${isRunning ? 'btn-danger' : 'btn-accent'}`}
-              style={{ padding: '14px 26px', fontSize: 13, minWidth: 150 }}
+              className={`btn ${isPending ? 'btn-outline' : isRunning ? 'btn-danger' : 'btn-accent'}`}
+              style={{ padding: '14px 26px', fontSize: 13, minWidth: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             >
-              {isRunning ? '■  Stop Bot' : '▶  Start Bot'}
+              {isPending ? (
+                <>
+                  <span className="spinner" />
+                  {pending === 'start' ? 'Starting…' : 'Stopping…'}
+                </>
+              ) : (isRunning ? '■  Stop Bot' : '▶  Start Bot')}
             </button>
           </div>
 
