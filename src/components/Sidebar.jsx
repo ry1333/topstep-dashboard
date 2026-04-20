@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useBotStatus } from '../hooks/useBotStatus'
+import { toast } from './Toast'
 
 const nav = [
   { to: '/',          label: 'Overview',   icon: <GridIcon /> },
@@ -105,7 +106,10 @@ export default function Sidebar() {
             </div>
           </div>
           <button
-            onClick={() => sendCommand(isRunning ? 'stop' : 'start')}
+            onClick={() => {
+              sendCommand(isRunning ? 'stop' : 'start')
+              toast(isRunning ? 'Stop sent' : 'Start sent', 'info')
+            }}
             style={{
               width: '100%', padding: '7px 0', fontSize: 11.5, fontWeight: 500,
               background: 'transparent',
