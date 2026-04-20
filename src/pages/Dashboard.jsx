@@ -62,6 +62,11 @@ export default function Dashboard() {
               {isRunning ? 'bot · live' : 'bot · offline'}
             </span>
           </div>
+          {status?.mode && (
+            <span style={{ color: status.mode === 'trend' ? 'var(--brand)' : 'var(--t2)' }}>
+              mode · {status.mode}
+            </span>
+          )}
           <span>combine · {combinePct.toFixed(1)}%</span>
           <span>wr · {winRate}%</span>
         </div>

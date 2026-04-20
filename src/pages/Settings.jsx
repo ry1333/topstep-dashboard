@@ -48,13 +48,20 @@ export default function Settings() {
             fontSize: 10.5, color: 'var(--t3)', letterSpacing: '0.02em',
           }}>
             <span>topstep-bot · digital ocean · 64.225.27.200</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span className={isRunning ? 'dot-live' : ''} style={{
-                width: 6, height: 6, borderRadius: '50%',
-                background: isRunning ? 'var(--profit)' : 'var(--t4)',
-              }} />
-              <span style={{ color: isRunning ? 'var(--profit)' : 'var(--t3)' }}>
-                {isRunning ? 'active' : 'idle'}
+            <span style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              {status?.mode && (
+                <span style={{ color: status.mode === 'trend' ? 'var(--brand)' : 'var(--t2)', letterSpacing: '0.02em' }}>
+                  mode · {status.mode}
+                </span>
+              )}
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span className={isRunning ? 'dot-live' : ''} style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: isRunning ? 'var(--profit)' : 'var(--t4)',
+                }} />
+                <span style={{ color: isRunning ? 'var(--profit)' : 'var(--t3)' }}>
+                  {isRunning ? 'active' : 'idle'}
+                </span>
               </span>
             </span>
           </div>
