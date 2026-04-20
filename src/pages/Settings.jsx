@@ -48,7 +48,7 @@ export default function Settings() {
             background: 'rgba(255,255,255,0.01)',
             fontSize: 10.5, color: 'var(--t3)', letterSpacing: '0.02em',
           }}>
-            <span className="hide-mobile">topstep-bot · digital ocean · 64.225.27.200</span>
+            <span className="hide-mobile">topstep-bot · local machine</span>
             <span className="mobile-only" style={{ display: 'none' }}>topstep-bot</span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               {status?.mode && (
@@ -76,7 +76,7 @@ export default function Settings() {
               }}>
                 {isRunning ? (
                   <>
-                    Bot is <span className="display-italic" style={{ color: 'var(--profit)' }}>live</span> on Digital Ocean
+                    Bot is <span className="display-italic" style={{ color: 'var(--profit)' }}>live</span>
                   </>
                 ) : (
                   <>
@@ -85,7 +85,7 @@ export default function Settings() {
                 )}
               </div>
               <div className="mono" style={{ fontSize: 11.5, color: 'var(--t3)', marginTop: 10 }}>
-                trades sync automatically · commands polled every 5s
+                running locally · commands polled every 5s
               </div>
             </div>
 
