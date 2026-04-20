@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script>
+      // GitHub Pages SPA redirect
+      const path = window.location.pathname.replace('/topstep-dashboard', '')
+      window.location.replace(
+        window.location.origin + '/topstep-dashboard/#' + (path || '/')
+      )
+    </script>
+  </head>
+</html>

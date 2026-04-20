@@ -1,0 +1,438 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Lifted dark surfaces — warm neutral, reduces screen burn */
+  --bg:    #0a0a0b;
+  --bg2:   #121214;
+  --bg3:   #17171a;
+  --bg4:   #1f1f22;
+
+  /* Borders — lighter, fewer needed overall */
+  --border:  rgba(237,237,237,0.04);
+  --border2: rgba(237,237,237,0.08);
+  --border3: rgba(237,237,237,0.13);
+
+  /* Bloomberg amber (muted) + proper P&L greens/reds */
+  --profit:     #22c55e;
+  --profit-dim: rgba(34,197,94,0.10);
+  --profit-soft:rgba(34,197,94,0.55);
+  --loss:       #ef4444;
+  --loss-dim:   rgba(239,68,68,0.10);
+  --loss-soft:  rgba(239,68,68,0.60);
+
+  --warn:       #ef4444;
+  --brand:      #8b5cf6;
+  --brand-dim:  rgba(139,92,246,0.10);
+  --brand-soft: rgba(139,92,246,0.4);
+
+  /* Text tiers — softer, warmer */
+  --t1: #ededed;
+  --t2: rgba(237,237,237,0.62);
+  --t3: rgba(237,237,237,0.38);
+  --t4: rgba(237,237,237,0.22);
+  --t-pure: #ffffff; /* for hero numbers only */
+
+  --font:    'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono:    'Geist Mono', 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  --display: 'Geist Mono', 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+  /* legacy compat — kept for pages that still reference them */
+  --bg-primary: var(--bg);
+  --text:   var(--t1);
+  --text2:  var(--t2);
+  --text3:  var(--t3);
+  --cyan:   var(--brand);
+  --blue:   var(--brand);
+  --blue-dim: var(--profit-dim);
+  --surface:  var(--bg2);
+  --surface2: var(--bg3);
+  --surface3: var(--bg4);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--t1);
+  font-family: var(--font);
+  font-feature-settings: 'cv02','cv03','cv04','cv11','ss01';
+  font-size: 13px;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Display mono — ONLY for hero numbers (balance, drawdown) */
+.display {
+  font-family: var(--display);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+}
+.display-italic {
+  font-family: var(--display);
+  font-weight: 600;
+  font-style: normal;
+}
+
+/* Title — sans heavy for page titles, much easier to read */
+.title {
+  font-family: var(--font);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: var(--t-pure);
+  line-height: 1;
+}
+
+/* Tabular figures everywhere numbers appear */
+table, .mono { font-variant-numeric: tabular-nums; }
+
+h1, h2, h3 { letter-spacing: -0.03em; font-weight: 600; }
+
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+/* Surfaces — subtle top hairline gives soft horizon without full border */
+.card {
+  background: var(--bg2);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(237,237,237,0.035);
+  transition: background 0.15s;
+}
+.card.bordered {
+  border: 1px solid var(--border);
+}
+
+.inp {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  color: var(--t1);
+  padding: 10px 13px;
+  font-family: var(--font);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.inp:focus { border-color: var(--border3); background: var(--bg3); }
+.inp::placeholder { color: var(--t3); }
+
+.btn {
+  position: relative;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: var(--font);
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.12s cubic-bezier(0.2,0.8,0.2,1);
+  letter-spacing: -0.005em;
+  line-height: 1;
+}
+.btn:disabled { opacity: 0.32; cursor: not-allowed; }
+
+/* Primary — monochrome light with subtle accent underscore on hover */
+.btn-primary {
+  background: #fff;
+  color: #000;
+  font-weight: 500;
+  padding: 10px 18px;
+  border-color: #fff;
+  box-shadow: 0 0 0 0 rgba(139,92,246,0);
+}
+.btn-primary:hover:not(:disabled) {
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.18);
+}
+.btn-primary:active { transform: translateY(0.5px); }
+
+/* Outline — structural, dark with border */
+.btn-outline {
+  background: rgba(255,255,255,0.02);
+  color: var(--t1);
+  padding: 10px 18px;
+  border-color: var(--border2);
+}
+.btn-outline:hover:not(:disabled) {
+  background: rgba(255,255,255,0.05);
+  border-color: var(--border3);
+}
+
+/* Destructive — subtle red accent, never filled */
+.btn-danger {
+  background: rgba(239,68,68,0.04);
+  color: var(--loss);
+  padding: 10px 18px;
+  border-color: rgba(239,68,68,0.22);
+}
+.btn-danger:hover:not(:disabled) {
+  background: rgba(239,68,68,0.08);
+  border-color: rgba(239,68,68,0.36);
+}
+
+/* Accent — green, for positive/start actions */
+.btn-accent {
+  background: rgba(34,197,94,0.05);
+  color: var(--profit);
+  padding: 10px 18px;
+  border-color: rgba(34,197,94,0.25);
+}
+.btn-accent:hover:not(:disabled) {
+  background: rgba(34,197,94,0.1);
+  border-color: rgba(34,197,94,0.4);
+}
+
+/* Amber — brand accent button */
+.btn-amber {
+  background: rgba(139,92,246,0.06);
+  color: var(--brand);
+  padding: 10px 18px;
+  border-color: rgba(139,92,246,0.26);
+}
+.btn-amber:hover:not(:disabled) {
+  background: rgba(139,92,246,0.12);
+  border-color: rgba(139,92,246,0.44);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--t2);
+  padding: 9px 14px;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(255,255,255,0.04);
+  color: var(--t1);
+}
+
+/* Custom range slider — precise, futuristic */
+input[type="range"].slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+}
+input[type="range"].slider::-webkit-slider-runnable-track {
+  height: 2px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+}
+input[type="range"].slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -7px;
+  width: 4px;
+  height: 16px;
+  background: #fff;
+  border-radius: 1px;
+  border: none;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.06), 0 0 12px rgba(139,92,246,0.3);
+  transition: all 0.12s;
+}
+input[type="range"].slider:hover::-webkit-slider-thumb {
+  box-shadow: 0 0 0 5px rgba(255,255,255,0.08), 0 0 16px rgba(139,92,246,0.5);
+}
+input[type="range"].slider::-moz-range-track {
+  height: 2px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  border: none;
+}
+input[type="range"].slider::-moz-range-thumb {
+  width: 4px;
+  height: 16px;
+  background: #fff;
+  border: none;
+  border-radius: 1px;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.06), 0 0 12px rgba(139,92,246,0.3);
+}
+input[type="range"].slider::-moz-range-progress {
+  height: 2px;
+  background: var(--brand);
+  border-radius: 2px;
+}
+
+/* Toggle — sharp, not rounded pill */
+.toggle {
+  width: 32px;
+  height: 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border2);
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.toggle.on {
+  background: rgba(139,92,246,0.12);
+  border-color: rgba(139,92,246,0.3);
+}
+.toggle-dot {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--t3);
+  transition: all 0.15s cubic-bezier(0.2,0.8,0.2,1);
+}
+.toggle.on .toggle-dot {
+  left: 16px;
+  background: var(--brand);
+  box-shadow: 0 0 8px rgba(139,92,246,0.5);
+}
+
+/* Filter chips — text-only with underline on active (Linear style) */
+.chip {
+  background: transparent;
+  border: none;
+  color: var(--t3);
+  font-family: var(--font);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 6px 2px;
+  margin-right: 18px;
+  cursor: pointer;
+  border-bottom: 1.5px solid transparent;
+  transition: all 0.12s;
+  letter-spacing: -0.01em;
+}
+.chip:hover { color: var(--t2); }
+.chip.active {
+  color: var(--t1);
+  border-bottom-color: var(--brand);
+}
+
+/* Tables — zebra, no borders */
+table.clean {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+table.clean th {
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0 12px 12px;
+}
+table.clean td {
+  padding: 11px 12px;
+  font-size: 12.5px;
+}
+table.clean tbody tr { transition: background 0.08s; }
+table.clean tbody tr:hover { background: rgba(255,255,255,0.025); }
+
+/* Animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.35s cubic-bezier(0.2,0.8,0.2,1) both; }
+
+@keyframes numTick {
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.tick { animation: numTick 0.22s cubic-bezier(0.2,0.8,0.2,1); }
+
+@keyframes livePulse {
+  0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 var(--profit-soft); }
+  50%      { transform: scale(1.05); opacity: 0.85; box-shadow: 0 0 0 4px rgba(139,92,246,0); }
+}
+.dot-live { animation: livePulse 2s ease-in-out infinite; }
+
+/* Sidebar nav */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 11px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 450;
+  color: var(--t2);
+  cursor: pointer;
+  transition: all 0.1s;
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+.nav-item:hover { color: var(--t1); background: rgba(255,255,255,0.035); }
+.nav-item.active {
+  color: var(--t1);
+  background: rgba(255,255,255,0.055);
+}
+
+/* Kbd hint */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--t3);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/* Command palette overlay */
+.cmdk-bg {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  animation: fadeUp 0.15s ease-out;
+}
+.cmdk-panel {
+  position: fixed;
+  top: 18%; left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, 90vw);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  overflow: hidden;
+  z-index: 101;
+  animation: cmdkIn 0.18s cubic-bezier(0.2,0.8,0.2,1);
+}
+@keyframes cmdkIn {
+  from { opacity: 0; transform: translate(-50%, -6px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Progress — lime, no shimmer */
+.progress-fill {
+  background: var(--brand);
+}
+
+/* Toast */
+@keyframes slideIn {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.toast { animation: slideIn 0.22s cubic-bezier(0.2,0.8,0.2,1); }
+
+/* Selection */
+::selection { background: rgba(139,92,246,0.25); color: #fff; }
