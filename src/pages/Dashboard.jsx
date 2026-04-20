@@ -51,7 +51,7 @@ export default function Dashboard() {
         <div style={{ fontSize: 11, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 500 }}>
           {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 18, fontSize: 11.5, color: 'var(--t3)', fontFamily: 'var(--mono)', letterSpacing: '-0.01em' }}>
+        <div className="status-strip" style={{ display: 'flex', alignItems: 'center', gap: 18, fontSize: 11.5, color: 'var(--t3)', fontFamily: 'var(--mono)', letterSpacing: '-0.01em' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             <span className={isRunning ? 'dot-live' : ''} style={{
               width: 6, height: 6, borderRadius: '50%',
@@ -74,7 +74,7 @@ export default function Dashboard() {
 
       {/* Hero number + equity chart, no container */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 26 }}>
+        <div className="hero-flex" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 26 }}>
           <div>
             <div style={{ fontSize: 11, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 500, marginBottom: 12 }}>
               Account Balance

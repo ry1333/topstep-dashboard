@@ -104,7 +104,7 @@ export default function Trades() {
       </div>
 
       {/* Table */}
-      <div>
+      <div className="tbl-wrap">
         <table className="clean">
           <thead>
             <tr>

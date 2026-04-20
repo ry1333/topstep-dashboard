@@ -48,7 +48,8 @@ export default function Settings() {
             background: 'rgba(255,255,255,0.01)',
             fontSize: 10.5, color: 'var(--t3)', letterSpacing: '0.02em',
           }}>
-            <span>topstep-bot · digital ocean · 64.225.27.200</span>
+            <span className="hide-mobile">topstep-bot · digital ocean · 64.225.27.200</span>
+            <span className="mobile-only" style={{ display: 'none' }}>topstep-bot</span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               {status?.mode && (
                 <span style={{ color: status.mode === 'trend' ? 'var(--brand)' : 'var(--t2)', letterSpacing: '0.02em' }}>
@@ -68,7 +69,7 @@ export default function Settings() {
           </div>
 
           {/* Body */}
-          <div style={{ padding: '28px 24px', display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'center' }}>
+          <div className="terminal-body" style={{ padding: '28px 24px', display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'center' }}>
             <div>
               <div className="display" style={{
                 fontSize: 32, letterSpacing: '-0.02em', color: '#fff', lineHeight: 1.1,
