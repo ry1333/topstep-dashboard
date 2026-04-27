@@ -43,8 +43,8 @@ export default function BacktestRun() {
   const [autoPlayed, setAutoPlayed] = useState(false)
   const lastTRef = useRef(0)
 
-  const startMs = equity.length ? new Date(equity[0].ts).getTime() : null
-  const endMs   = equity.length ? new Date(equity[equity.length - 1].ts).getTime() : null
+  const startMs = equity[0]?.ts ? new Date(equity[0].ts).getTime() : null
+  const endMs   = equity[equity.length - 1]?.ts ? new Date(equity[equity.length - 1].ts).getTime() : null
 
   // Initialize cursor when equity loads
   useEffect(() => {
@@ -72,21 +72,26 @@ export default function BacktestRun() {
       const dt = now - lastTRef.current
       lastTRef.current = now
       setCursor(prev => {
+        if (!equity[0]?.ts) return prev  // guard: data not ready
         if (prev == null) return new Date(equity[0].ts).getTime()
         // binary search current sample index from cursor ms
         let lo = 0, hi = samples - 1
         while (lo < hi) {
           const mid = (lo + hi + 1) >> 1
-          if (new Date(equity[mid].ts).getTime() <= prev) lo = mid
+          const midTs = equity[mid]?.ts
+          if (midTs && new Date(midTs).getTime() <= prev) lo = mid
           else hi = mid - 1
         }
         const idx = lo
         const advance = samples * (dt / (duration * 1000))
         const nextIdx = Math.min(samples - 1, idx + advance)
-        const nextMs = new Date(equity[Math.floor(nextIdx)].ts).getTime()
+        const nextItem = equity[Math.floor(nextIdx)]
+        if (!nextItem?.ts) return prev
+        const nextMs = new Date(nextItem.ts).getTime()
         if (nextIdx >= samples - 1) {
           setPlaying(false)
-          return new Date(equity[samples - 1].ts).getTime()
+          const lastTs = equity[samples - 1]?.ts
+          return lastTs ? new Date(lastTs).getTime() : prev
         }
         return nextMs
       })
@@ -99,17 +104,17 @@ export default function BacktestRun() {
   // ── Sliced views derived from cursor ──
   const visibleEquity = useMemo(() => {
     if (cursor == null) return equity
-    return equity.filter(e => new Date(e.ts).getTime() <= cursor)
+    return equity.filter(e => e?.ts && new Date(e.ts).getTime() <= cursor)
   }, [equity, cursor])
 
   const visibleTrades = useMemo(() => {
     if (cursor == null) return trades
-    return trades.filter(t => new Date(t.exit_ts).getTime() <= cursor)
+    return trades.filter(t => t?.exit_ts && new Date(t.exit_ts).getTime() <= cursor)
   }, [trades, cursor])
 
   const visibleRiskEvents = useMemo(() => {
     if (cursor == null) return riskEvents
-    return riskEvents.filter(e => new Date(e.ts).getTime() <= cursor)
+    return riskEvents.filter(e => e?.ts && new Date(e.ts).getTime() <= cursor)
   }, [riskEvents, cursor])
 
   // Trade currently open (entered before cursor, not yet exited)
@@ -211,11 +216,12 @@ export default function BacktestRun() {
 
   // Scrub bar % uses sample index (skips dead time), not wall-clock
   const cursorPct = (() => {
-    if (cursor == null || equity.length === 0) return 0
+    if (cursor == null || equity.length === 0 || !equity[0]?.ts) return 0
     let lo = 0, hi = equity.length - 1
     while (lo < hi) {
       const mid = (lo + hi + 1) >> 1
-      if (new Date(equity[mid].ts).getTime() <= cursor) lo = mid
+      const midTs = equity[mid]?.ts
+      if (midTs && new Date(midTs).getTime() <= cursor) lo = mid
       else hi = mid - 1
     }
     return Math.max(0, Math.min(1, lo / Math.max(1, equity.length - 1)))
