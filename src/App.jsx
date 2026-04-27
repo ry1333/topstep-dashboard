@@ -5,11 +5,15 @@ import { useBotStatus } from './hooks/useBotStatus'
 import Sidebar from './components/Sidebar'
 import ToastContainer from './components/Toast'
 import CommandPalette from './components/CommandPalette'
+import TickerBar from './components/TickerBar'
+import StatusBar from './components/StatusBar'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Trades from './pages/Trades'
 import Analytics from './pages/Analytics'
 import Risk from './pages/Risk'
+import Backtest from './pages/Backtest'
+import BacktestRun from './pages/BacktestRun'
 import Settings from './pages/Settings'
 
 function MobileTopbar({ onOpen }) {
@@ -39,13 +43,17 @@ function MobileTopbar({ onOpen }) {
 function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false)
   return (
-    <div className="layout-shell">
+    <div className="layout-shell shell-with-bars">
       <MobileTopbar onOpen={() => setMenuOpen(true)} />
       {menuOpen && <div className="sidebar-backdrop" onClick={() => setMenuOpen(false)} />}
       <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} />
       <main className="layout-main">
-        {children}
+        <TickerBar />
+        <div style={{ paddingTop: 24 }}>
+          {children}
+        </div>
       </main>
+      <StatusBar />
       <ToastContainer />
       <CommandPalette />
     </div>
@@ -76,6 +84,8 @@ export default function App() {
         <Route path="/trades" element={<Guard><Layout><Trades /></Layout></Guard>} />
         <Route path="/analytics" element={<Guard><Layout><Analytics /></Layout></Guard>} />
         <Route path="/risk" element={<Guard><Layout><Risk /></Layout></Guard>} />
+        <Route path="/backtest" element={<Guard><Layout><Backtest /></Layout></Guard>} />
+        <Route path="/backtest/:id" element={<Guard><Layout><BacktestRun /></Layout></Guard>} />
         <Route path="/settings" element={<Guard><Layout><Settings /></Layout></Guard>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

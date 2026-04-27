@@ -562,3 +562,335 @@ table.clean tbody tr:hover { background: rgba(255,255,255,0.025); }
   /* Section top padding reduce */
   .section-pad { padding-top: 20px !important; gap: 24px !important; }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   QUANTITATIVE OPERATOR CONSOLE · 2026
+   Futuristic HUD aesthetic layered on top of the existing system.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Mint-cyan = "live system" — distinct from brand purple */
+  --cy:      #5eead4;
+  --cy-dim:  rgba(94,234,212,0.10);
+  --cy-soft: rgba(94,234,212,0.42);
+  --cy-edge: rgba(94,234,212,0.22);
+
+  /* Layered surfaces with slight cool cast */
+  --srf-0: #08080a;
+  --srf-1: #0c0c10;
+  --srf-2: #11111a;
+  --srf-3: #181822;
+
+  /* Glowable hairline borders */
+  --hud-edge:        rgba(255,255,255,0.06);
+  --hud-edge-strong: rgba(255,255,255,0.12);
+  --hud-glow:        0 0 0 1px var(--cy-edge), 0 0 18px -2px var(--cy-edge);
+}
+
+/* ── Atmospheric background: dot-grid + radial vignette ──────────────────── */
+body {
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(139,92,246,0.06), transparent 60%),
+    radial-gradient(ellipse at 100% 100%, rgba(94,234,212,0.04), transparent 50%),
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,0.018) 1px, transparent 0) 0 0 / 22px 22px,
+    var(--bg);
+  background-attachment: fixed;
+}
+
+/* Optional scan-line overlay — apply to <body> via .scan-bg if you want CRT vibes */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom,
+    rgba(255,255,255,0.012) 0,
+    rgba(255,255,255,0.012) 1px,
+    transparent 1px,
+    transparent 3px);
+  background-size: 100% 3px;
+  opacity: 0.25;
+  mix-blend-mode: screen;
+  z-index: 1;
+}
+#root { position: relative; z-index: 2; }
+
+/* ── HUD card: corner brackets + glowable hairline border ────────────────── */
+.hud {
+  position: relative;
+  background: linear-gradient(180deg, var(--srf-1) 0%, var(--srf-0) 100%);
+  border: 1px solid var(--hud-edge);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+.hud-hover:hover {
+  border-color: var(--cy-edge);
+  box-shadow: var(--hud-glow);
+}
+.hud-active {
+  border-color: var(--cy-edge);
+  box-shadow: var(--hud-glow);
+}
+
+/* Corner brackets — drawn with pseudo-elements, no SVG cost */
+.hud::before, .hud::after,
+.hud > .hud-tl, .hud > .hud-tr, .hud > .hud-bl, .hud > .hud-br {
+  content: '';
+  position: absolute;
+  width: 9px; height: 9px;
+  border-color: var(--hud-edge-strong);
+  pointer-events: none;
+  transition: border-color 0.18s ease;
+}
+.hud::before { top: -1px; left: -1px;  border-top: 1.5px solid; border-left: 1.5px solid; }
+.hud::after  { top: -1px; right: -1px; border-top: 1.5px solid; border-right: 1.5px solid; }
+.hud > .hud-bl { bottom: -1px; left: -1px;  border-bottom: 1.5px solid; border-left: 1.5px solid; }
+.hud > .hud-br { bottom: -1px; right: -1px; border-bottom: 1.5px solid; border-right: 1.5px solid; }
+.hud-hover:hover::before, .hud-hover:hover::after,
+.hud-hover:hover > .hud-bl, .hud-hover:hover > .hud-br,
+.hud-active::before, .hud-active::after,
+.hud-active > .hud-bl, .hud-active > .hud-br { border-color: var(--cy); }
+
+/* Inset highlight at top of every HUD surface */
+.hud > .hud-bl, .hud > .hud-br { /* only for elements that have these spans */ }
+
+/* Caption / label — small uppercase metadata above metrics */
+.cap {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.cap-cy { color: var(--cy); }
+.cap-pl { color: var(--profit); }
+.cap-ls { color: var(--loss); }
+
+/* Big metric numbers (default for stat tiles) */
+.fig {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
+  color: var(--t1);
+}
+
+/* Number ticker — applies to any value that updates frequently */
+@keyframes figFlash {
+  0%   { color: var(--cy); text-shadow: 0 0 12px var(--cy-soft); }
+  100% { color: inherit; text-shadow: none; }
+}
+.fig-flash { animation: figFlash 0.42s ease-out; }
+
+/* ── Glow chip: tiny inline pill for status / mode ───────────────────────── */
+.chip-hud {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--hud-edge);
+  color: var(--t2);
+  border-radius: 2px;
+}
+.chip-hud.cy { color: var(--cy); border-color: var(--cy-edge); background: var(--cy-dim); }
+.chip-hud.pl { color: var(--profit); border-color: rgba(34,197,94,0.25); background: var(--profit-dim); }
+.chip-hud.ls { color: var(--loss); border-color: rgba(239,68,68,0.25); background: var(--loss-dim); }
+.chip-hud.br { color: var(--brand); border-color: rgba(139,92,246,0.30); background: var(--brand-dim); }
+
+.chip-hud .dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* ── Terminal table: dense, monospaced data grid ─────────────────────────── */
+table.term {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+table.term thead tr {
+  border-top: 1px solid var(--hud-edge);
+  border-bottom: 1px solid var(--hud-edge);
+}
+table.term th {
+  text-align: left;
+  font-weight: 500;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--t4);
+  padding: 7px 12px;
+  background: rgba(255,255,255,0.012);
+}
+table.term td {
+  padding: 7px 12px;
+  color: var(--t2);
+  border-bottom: 1px solid rgba(255,255,255,0.025);
+  white-space: nowrap;
+}
+table.term tbody tr { transition: background 0.08s; }
+table.term tbody tr:hover { background: rgba(94,234,212,0.025); }
+table.term td.r, table.term th.r { text-align: right; }
+table.term td.c, table.term th.c { text-align: center; }
+
+/* Heat cells — color intensity mapped to magnitude */
+.heat-pos-1 { background: rgba(34,197,94,0.06); color: var(--profit); }
+.heat-pos-2 { background: rgba(34,197,94,0.14); color: var(--profit); }
+.heat-pos-3 { background: rgba(34,197,94,0.26); color: #6efaa1; }
+.heat-pos-4 { background: rgba(34,197,94,0.42); color: #fff; }
+.heat-neg-1 { background: rgba(239,68,68,0.06); color: var(--loss); }
+.heat-neg-2 { background: rgba(239,68,68,0.14); color: var(--loss); }
+.heat-neg-3 { background: rgba(239,68,68,0.26); color: #ff8585; }
+.heat-neg-4 { background: rgba(239,68,68,0.42); color: #fff; }
+.heat-neut  { background: rgba(255,255,255,0.025); color: var(--t3); }
+
+/* ── Top ticker bar (Bloomberg-style) ────────────────────────────────────── */
+.ticker {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  height: 32px;
+  padding: 0 24px;
+  background: rgba(8,8,10,0.78);
+  backdrop-filter: blur(14px) saturate(140%);
+  border-bottom: 1px solid var(--hud-edge);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--t2);
+  overflow: hidden;
+}
+.ticker-cell { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.ticker-cell .lbl { color: var(--t4); font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; }
+.ticker-cell .val { font-weight: 500; }
+.ticker .sep { width: 1px; height: 12px; background: var(--hud-edge); }
+
+/* ── Bottom status strip ─────────────────────────────────────────────────── */
+.statusbar {
+  position: fixed;
+  bottom: 0; left: 220px; right: 0;
+  height: 26px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  background: rgba(8,8,10,0.85);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--hud-edge);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--t3);
+  letter-spacing: 0.04em;
+  z-index: 25;
+}
+.statusbar .seg { display: flex; align-items: center; gap: 7px; }
+.statusbar .blink { animation: livePulse 1.6s ease-in-out infinite; }
+@media (max-width: 767px) {
+  .statusbar { left: 0; }
+}
+
+/* ── Sparkline svg styling (consumed by Sparkline component) ─────────────── */
+.spark-line { stroke-width: 1.2; fill: none; }
+.spark-area { opacity: 0.25; }
+
+/* ── Glitch / scan shimmer for loading states ────────────────────────────── */
+@keyframes scanShimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(94,234,212,0.10) 50%,
+    transparent 100%);
+  background-size: 200% 100%;
+  animation: scanShimmer 1.6s linear infinite;
+}
+
+/* Subtle data-loading pulse for cards */
+@keyframes hudPulse {
+  0%, 100% { box-shadow: inset 0 0 0 1px var(--hud-edge); }
+  50%      { box-shadow: inset 0 0 0 1px var(--cy-edge); }
+}
+.hud-pulse { animation: hudPulse 1.8s ease-in-out infinite; }
+
+/* ── Layout: shell now reserves room for ticker + status bar ─────────────── */
+.shell-with-bars .layout-main {
+  padding: 0 36px 38px;
+}
+.shell-with-bars .layout-main > .ticker { margin: 0 -36px; }
+@media (max-width: 767px) {
+  .shell-with-bars .layout-main { padding: 0 18px 38px !important; }
+  .shell-with-bars .layout-main > .ticker { margin: 0 -18px; padding: 0 18px; gap: 18px; overflow-x: auto; }
+}
+
+/* Page section header — for consistent page heads */
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--hud-edge);
+  margin-bottom: 24px;
+}
+.page-head .crumbs {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--t4);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.page-head h1 {
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--t-pure);
+  line-height: 1;
+}
+
+/* Sub-grid label row — shows column legend above dense data */
+.legend-row {
+  display: flex;
+  gap: 22px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--t4);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Bordered section title — with side line */
+.sec-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--t3);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.sec-title::before {
+  content: '';
+  width: 14px; height: 1px;
+  background: var(--cy);
+  flex-shrink: 0;
+}
+.sec-title .count {
+  margin-left: auto;
+  color: var(--t4);
+  letter-spacing: 0.06em;
+}
+
