@@ -61,29 +61,40 @@ export default function BacktestRun() {
     setAutoPlayed(true)
   }, [run, equity.length, autoPlayed])
 
-  // Playback loop — rAF, advances cursor by elapsed/duration of total range
+  // Playback loop — rAF, advances by equity-sample index so that overnight /
+  // weekend gaps are skipped (the cursor only "lands" on times that have data).
   useEffect(() => {
-    if (!playing || !startMs || !endMs || cursor == null) return
-    const range = endMs - startMs
+    if (!playing || equity.length === 0 || cursor == null) return
+    const samples = equity.length
     let raf
     lastTRef.current = performance.now()
     const tick = (now) => {
       const dt = now - lastTRef.current
       lastTRef.current = now
       setCursor(prev => {
-        if (prev == null) return startMs
-        const next = prev + range * (dt / (duration * 1000))
-        if (next >= endMs) {
-          setPlaying(false)
-          return endMs
+        if (prev == null) return new Date(equity[0].ts).getTime()
+        // binary search current sample index from cursor ms
+        let lo = 0, hi = samples - 1
+        while (lo < hi) {
+          const mid = (lo + hi + 1) >> 1
+          if (new Date(equity[mid].ts).getTime() <= prev) lo = mid
+          else hi = mid - 1
         }
-        return next
+        const idx = lo
+        const advance = samples * (dt / (duration * 1000))
+        const nextIdx = Math.min(samples - 1, idx + advance)
+        const nextMs = new Date(equity[Math.floor(nextIdx)].ts).getTime()
+        if (nextIdx >= samples - 1) {
+          setPlaying(false)
+          return new Date(equity[samples - 1].ts).getTime()
+        }
+        return nextMs
       })
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [playing, duration, startMs, endMs])
+  }, [playing, duration, equity.length])
 
   // ── Sliced views derived from cursor ──
   const visibleEquity = useMemo(() => {
@@ -198,7 +209,17 @@ export default function BacktestRun() {
     : tradeFilter === 'losses' ? losses
     : visibleTrades.filter(t => t.exit_reason === tradeFilter)
 
-  const cursorPct = (cursor != null && startMs != null && endMs != null) ? Math.max(0, Math.min(1, (cursor - startMs) / (endMs - startMs))) : 0
+  // Scrub bar % uses sample index (skips dead time), not wall-clock
+  const cursorPct = (() => {
+    if (cursor == null || equity.length === 0) return 0
+    let lo = 0, hi = equity.length - 1
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1
+      if (new Date(equity[mid].ts).getTime() <= cursor) lo = mid
+      else hi = mid - 1
+    }
+    return Math.max(0, Math.min(1, lo / Math.max(1, equity.length - 1)))
+  })()
   const cursorDate = cursor != null ? new Date(cursor) : null
   const isReplayable = run.status === 'done' && equity.length > 0
   const atEnd = cursor != null && endMs != null && cursor >= endMs - 100
@@ -297,7 +318,10 @@ export default function BacktestRun() {
                 onChange={e => {
                   const v = parseInt(e.target.value) / 1000
                   setPlaying(false)
-                  setCursor(startMs + (endMs - startMs) * v)
+                  if (equity.length > 0) {
+                    const idx = Math.floor(v * (equity.length - 1))
+                    setCursor(new Date(equity[idx].ts).getTime())
+                  }
                 }}
                 style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'ew-resize', width: '100%' }}
               />
