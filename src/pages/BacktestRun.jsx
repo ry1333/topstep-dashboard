@@ -8,6 +8,7 @@ import MaeMfeScatter from '../components/MaeMfeScatter'
 import PnlHeatmap from '../components/PnlHeatmap'
 import PriceReplayChart from '../components/PriceReplayChart'
 import { fetchSignalLogFromStorage, useBacktestRun } from '../hooks/useBacktests'
+import { buildMLDataset, buildSchemaDoc, downloadCSV, downloadJSON } from '../lib/mlExport'
 
 function parseReasoning(entryTag) {
   if (!entryTag || typeof entryTag !== 'string') return null
@@ -193,21 +194,7 @@ export default function BacktestRun() {
     }))
   }, [visibleTrades, visibleEquity, currentEquity])
 
-  // ── ML-ready exports ────────────────────────────────────────────
-  // CSV escaping: wrap in quotes if contains comma/quote/newline, escape inner quotes
-  function csvCell(v) {
-    if (v == null) return ''
-    const s = typeof v === 'string' ? v : (typeof v === 'object' ? JSON.stringify(v) : String(v))
-    if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"'
-    return s
-  }
-  function downloadCSV(rows, name) {
-    const text = rows.map(r => r.map(csvCell).join(',')).join('\n')
-    const blob = new Blob([text], { type: 'text/csv;charset=utf-8' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob); a.download = name; a.click()
-  }
-
+  // ── ML-ready exports (use shared mlExport lib) ─────────────────
   function exportTradesCSV() {
     // Flat per-trade record. One row = one round-trip trade with its outcome.
     // Use this to train trade-quality classifiers (P(win) given entry context).
@@ -243,33 +230,31 @@ export default function BacktestRun() {
     downloadCSV(rows, `equity_${id?.slice(0,8) || 'run'}.csv`)
   }
 
-  async function exportSignalsCSV() {
-    // Gold-standard ML training file: every signal the bot considered
-    // (TAKEN + REJECTED), flat, with all features as columns and the
-    // realized outcome label.
+  async function exportMLDataset() {
+    // Gold-standard ML training file. Joins signals + bars + trades, adds
+    // bar context features, return windows, and a walk-forward fold column.
     const signals = await fetchSignalLogFromStorage(id)
     if (!signals || signals.length === 0) {
       alert('No signal log available — re-run the bot to capture signals.')
       return
     }
-    const baseCols = ['run_id','created_at','symbol','side','outcome',
-                      'pnl','exit_price','duration_seconds','mfe_ticks','mae_ticks',
-                      'entry_price','contracts','score','regime_mode','session',
-                      'minutes_into_session','min_score_threshold','day_of_week','hour_of_day',
-                      'trades_today','daily_pnl_before','consecutive_losses',
-                      'tp_price','sl_price','bot_version']
-    const featureKeys = new Set()
-    signals.forEach(s => { if (s.features) Object.keys(s.features).forEach(k => featureKeys.add(k)) })
-    const featureCols = [...featureKeys].sort().map(k => `feat_${k}`)
-    const cols = [...baseCols, ...featureCols]
-    const rows = [cols]
-    signals.forEach(s => {
-      rows.push([
-        ...baseCols.map(c => c === 'run_id' ? id : (s[c] ?? '')),
-        ...[...featureKeys].sort().map(k => s.features?.[k] ?? ''),
-      ])
+    const rows = buildMLDataset({
+      runId: id, runMeta: run, signals, bars, trades,
     })
-    downloadCSV(rows, `signals_${id?.slice(0,8) || 'run'}.csv`)
+    downloadCSV(rows, `ml_dataset_${id?.slice(0,8) || 'run'}.csv`)
+  }
+
+  function exportBarsCSV() {
+    if (!bars || bars.length === 0) {
+      alert('No bar data — re-run to populate.')
+      return
+    }
+    const cols = ['run_id','symbol','t','o','h','l','c','v','iso']
+    const r = [cols, ...bars.map(b => [
+      id, run?.symbol || '', b.t, b.o, b.h, b.l, b.c, b.v,
+      new Date(b.t * 1000).toISOString(),
+    ])]
+    downloadCSV(r, `bars_${id?.slice(0,8) || 'run'}.csv`)
   }
 
   async function exportSignalsJSON() {
@@ -279,6 +264,10 @@ export default function BacktestRun() {
     a.href = URL.createObjectURL(blob)
     a.download = `signals_${id?.slice(0,8) || 'run'}.json`
     a.click()
+  }
+
+  function exportSchema() {
+    downloadJSON(buildSchemaDoc({ runMeta: run }), `schema_${id?.slice(0,8) || 'run'}.json`)
   }
 
   // ── Now safe to early-return since all hooks above are unconditional ──
@@ -339,10 +328,12 @@ export default function BacktestRun() {
         </div>
         {trades.length > 0 && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            <ExportBtn onClick={exportSignalsCSV} hint="Every signal (taken + rejected) with full feature set — best for ML training">↓ SIGNALS.CSV ★</ExportBtn>
+            <ExportBtn onClick={exportMLDataset} hint="ML-ready: signals + bar context + returns + walk-forward fold. Drop into pandas, train classifier.">↓ ML_DATASET.CSV ★</ExportBtn>
             <ExportBtn onClick={exportTradesCSV} hint="Round-trip trades with reasoning + features as columns">↓ TRADES.CSV</ExportBtn>
+            <ExportBtn onClick={exportBarsCSV} hint="Raw OHLCV bars used in this run">↓ BARS.CSV</ExportBtn>
             <ExportBtn onClick={exportEquityCSV} hint="Bar-by-bar equity curve with drawdown">↓ EQUITY.CSV</ExportBtn>
-            <ExportBtn onClick={exportSignalsJSON} hint="Raw signal log as JSON (preserves nested structures)">↓ SIGNALS.JSON</ExportBtn>
+            <ExportBtn onClick={exportSignalsJSON} hint="Raw signal log JSON (preserves nested structures)">↓ JSON</ExportBtn>
+            <ExportBtn onClick={exportSchema} hint="Column-by-column documentation + ML methodology notes">↓ SCHEMA</ExportBtn>
           </div>
         )}
       </div>

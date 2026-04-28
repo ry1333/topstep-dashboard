@@ -6,7 +6,10 @@ import { toast } from '../components/Toast'
 import { supabase } from '../lib/supabase'
 import { useBacktestRuns, uploadStrategyAndQueue } from '../hooks/useBacktests'
 
-const SYMS = ['MES']  // expand to MNQ when data is pulled
+const SYMS = ['MES', 'MNQ', 'M2K']
+// Earliest bar date we have cached locally (Databento pull window).
+// Update if you extend the cache.
+const DATA_FLOOR = '2026-01-27'
 
 const STATUS = {
   queued:   { tone: 'br', label: 'QUEUED' },
@@ -229,13 +232,17 @@ function NewRunForm({ onDone }) {
   const [file, setFile] = useState(null)
   const [drag, setDrag] = useState(false)
   const [className, setClassName] = useState('Strategy')
-  const [symbol, setSymbol] = useState('MES')
-  const [startDate, setStartDate] = useState(todayMinus(30))
+  const [selectedSyms, setSelectedSyms] = useState(['MES','MNQ','M2K'])
+  const [startDate, setStartDate] = useState(DATA_FLOOR)        // longest available
   const [endDate, setEndDate] = useState(todayMinus(0))
   const [equity, setEquity] = useState(50000)
   const [enforceTopstep, setEnforceTopstep] = useState(true)
   const [label, setLabel] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  function toggleSym(s) {
+    setSelectedSyms(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])
+  }
 
   function pickFile(f) {
     if (!f) return
@@ -251,8 +258,13 @@ function NewRunForm({ onDone }) {
   async function submit(e) {
     e.preventDefault()
     if (!file) { toast('Pick a strategy .py file', 'error'); return }
+    if (selectedSyms.length === 0) { toast('Select at least one symbol', 'error'); return }
     setSubmitting(true)
     try {
+      // Store symbols comma-separated in the existing single-column field
+      // (runner splits on comma). MES kept first for back-compat with existing
+      // bar/chart code that reads run.symbol as a single label.
+      const symbol = selectedSyms.join(',')
       await uploadStrategyAndQueue({
         file, className, symbol, startDate, endDate, equity, enforceTopstep, label,
       })
@@ -337,16 +349,36 @@ function NewRunForm({ onDone }) {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 14 }}>
             <div>
-              <Lbl>SYMBOL</Lbl>
-              <select value={symbol} onChange={e => setSymbol(e.target.value)} style={inputBase}>
-                {SYMS.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+              <Lbl>SYMBOLS</Lbl>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {SYMS.map(s => {
+                  const on = selectedSyms.includes(s)
+                  return (
+                    <button key={s} type="button" onClick={() => toggleSym(s)} style={{
+                      flex: 1,
+                      padding: '7px 6px',
+                      background: on ? 'var(--cy-dim)' : 'transparent',
+                      color: on ? 'var(--cy)' : 'var(--t3)',
+                      border: `1px solid ${on ? 'var(--cy-edge)' : 'var(--hud-edge)'}`,
+                      borderRadius: 0,
+                      fontFamily: 'var(--mono)',
+                      fontSize: 12,
+                      fontWeight: 500,
+                      letterSpacing: '0.04em',
+                      cursor: 'pointer',
+                      transition: 'all 0.1s',
+                    }}>
+                      {on ? '✓ ' : ''}{s}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
             <div>
-              <Lbl>START</Lbl>
-              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={inputBase} />
+              <Lbl>START · earliest {DATA_FLOOR}</Lbl>
+              <input type="date" min={DATA_FLOOR} value={startDate} onChange={e => setStartDate(e.target.value)} style={inputBase} />
             </div>
             <div>
               <Lbl>END</Lbl>
@@ -356,6 +388,23 @@ function NewRunForm({ onDone }) {
               <Lbl>EQUITY · USD</Lbl>
               <input type="number" value={equity} onChange={e => setEquity(parseFloat(e.target.value))} style={inputBase} />
             </div>
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <span className="cap" style={{ marginRight: 4 }}>QUICK</span>
+            {[
+              { lbl: '7d',   start: todayMinus(7) },
+              { lbl: '30d',  start: todayMinus(30) },
+              { lbl: '90d',  start: DATA_FLOOR },
+              { lbl: 'MAX',  start: DATA_FLOOR },
+            ].map(p => (
+              <button key={p.lbl} type="button" onClick={() => setStartDate(p.start)} style={{
+                background: startDate === p.start ? 'var(--cy-dim)' : 'transparent',
+                color: startDate === p.start ? 'var(--cy)' : 'var(--t3)',
+                border: `1px solid ${startDate === p.start ? 'var(--cy-edge)' : 'var(--hud-edge)'}`,
+                padding: '3px 9px', fontFamily: 'var(--mono)', fontSize: 10,
+                letterSpacing: '0.06em', cursor: 'pointer', borderRadius: 0,
+              }}>{p.lbl}</button>
+            ))}
           </div>
 
           <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '10px 12px', border: '1px solid var(--hud-edge)', background: enforceTopstep ? 'var(--cy-dim)' : 'transparent' }}>
