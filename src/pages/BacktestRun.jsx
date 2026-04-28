@@ -151,6 +151,23 @@ export default function BacktestRun() {
     return Object.entries(m).map(([k, n]) => ({ k, n })).sort((a, b) => b.n - a.n)
   }, [visibleTrades])
 
+  // Entry setups: WHY trades were taken (regime · session combo from bot's reasoning)
+  const entrySetups = useMemo(() => {
+    const m = {}
+    visibleTrades.forEach(t => {
+      const r = parseReasoning(t.entry_tag)
+      const regime = r?.regime || 'unknown'
+      const session = r?.session || 'no-session'
+      const key = `${regime} · ${session}`
+      if (!m[key]) m[key] = { count: 0, wins: 0, pnl: 0 }
+      m[key].count++
+      const pnl = parseFloat(t.pnl_net)
+      if (pnl > 0) m[key].wins++
+      m[key].pnl += pnl
+    })
+    return Object.entries(m).map(([k, v]) => ({ k, ...v })).sort((a, b) => b.count - a.count)
+  }, [visibleTrades])
+
   const dailyPnl = useMemo(() => {
     const out = {}
     visibleTrades.forEach(t => {
@@ -546,32 +563,57 @@ export default function BacktestRun() {
 
         <HudCard style={{ padding: 18 }}>
           <div className="sec-title">
-            exit reasons
-            <span className="count">{exitReasons.length} kinds</span>
+            entry setups
+            <span className="count">{entrySetups.length} kinds · why trades fired</span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {exitReasons.map(({ k, n }) => {
-              const pct = visibleTrades.length ? (n / visibleTrades.length) * 100 : 0
-              const color = k === 'take_profit' ? 'var(--profit)' :
-                k === 'stop_loss' ? 'var(--loss)' :
-                k === 'risk_flatten' ? 'var(--brand)' :
-                k === 'session_flatten' ? 'var(--cy)' : 'var(--t3)'
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {entrySetups.map(({ k, count, wins, pnl }) => {
+              const pct = visibleTrades.length ? (count / visibleTrades.length) * 100 : 0
+              const wr = wins / count
+              const wrColor = wr >= 0.5 ? 'var(--profit)' : wr >= 0.3 ? 'var(--t2)' : 'var(--loss)'
               return (
                 <div key={k}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span className="mono" style={{ fontSize: 11, color }}>{k}</span>
-                    <span className="mono" style={{ fontSize: 11, color: 'var(--t3)' }}>{n} <span style={{ color: 'var(--t4)' }}>· {pct.toFixed(1)}%</span></span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                    <span className="mono" style={{ fontSize: 11, color: 'var(--t1)' }}>{k}</span>
+                    <span className="mono" style={{ fontSize: 10.5, color: 'var(--t3)' }}>
+                      {count}
+                      <span style={{ color: wrColor, marginLeft: 6 }}>{(wr * 100).toFixed(0)}%</span>
+                      <span style={{ color: pnl >= 0 ? 'var(--profit)' : 'var(--loss)', marginLeft: 6 }}>
+                        {pnl >= 0 ? '+' : '-'}${Math.abs(pnl).toFixed(0)}
+                      </span>
+                    </span>
                   </div>
                   <div style={{ height: 3, background: 'rgba(255,255,255,0.04)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${pct}%`, background: color, opacity: 0.8 }} />
+                    <div style={{ height: '100%', width: `${pct}%`, background: pnl >= 0 ? 'var(--profit)' : 'var(--loss)', opacity: 0.8 }} />
                   </div>
                 </div>
               )
             })}
-            {exitReasons.length === 0 && (
-              <div className="cap" style={{ color: 'var(--t4)', padding: '8px 0' }}>NO TRADES YET</div>
+            {entrySetups.length === 0 && (
+              <div className="cap" style={{ color: 'var(--t4)', padding: '8px 0' }}>
+                NO REASONING DATA · run bot to capture signal logs
+              </div>
             )}
           </div>
+          {/* Compact secondary row: exit reasons */}
+          {exitReasons.length > 0 && (
+            <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--hud-edge)' }}>
+              <div className="cap" style={{ marginBottom: 8, fontSize: 9 }}>EXIT BREAKDOWN</div>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontFamily: 'var(--mono)', fontSize: 10 }}>
+                {exitReasons.map(({ k, n }) => {
+                  const color = k === 'take_profit' ? 'var(--profit)' :
+                    k === 'stop_loss' ? 'var(--loss)' :
+                    k === 'risk_flatten' ? 'var(--brand)' :
+                    k === 'session_flatten' ? 'var(--cy)' : 'var(--t3)'
+                  return (
+                    <span key={k} style={{ color }}>
+                      {k}: {n}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </HudCard>
       </div>
 
