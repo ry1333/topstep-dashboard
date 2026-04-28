@@ -111,6 +111,30 @@ export async function fetchSignalLogFromStorage(runId) {
   }
 }
 
+export async function cancelRun(runId) {
+  // Flip status. The runner polls this during progress writes and will abort.
+  const { error } = await supabase.from('backtest_runs')
+    .update({ status: 'canceled', finished_at: new Date().toISOString() })
+    .eq('id', runId)
+  if (error) throw error
+}
+
+export async function deleteRun(runId) {
+  // FK cascade handles backtest_equity / trades / risk_events.
+  // Also clean up Storage artifacts (bars + signal_log + strategy file if any).
+  try {
+    // List files in runs/<id>/ and delete them
+    const { data: files } = await supabase.storage.from('strategies').list(`runs/${runId}`)
+    if (files && files.length) {
+      const paths = files.map(f => `runs/${runId}/${f.name}`)
+      await supabase.storage.from('strategies').remove(paths)
+    }
+  } catch {}
+  // Then delete the run row
+  const { error } = await supabase.from('backtest_runs').delete().eq('id', runId)
+  if (error) throw error
+}
+
 export async function uploadStrategyAndQueue({ file, className, symbol, startDate, endDate, equity, enforceTopstep, label }) {
   const ts = Date.now()
   const path = `runs/${ts}_${file.name}`

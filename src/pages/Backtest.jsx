@@ -4,7 +4,7 @@ import HudCard from '../components/HudCard'
 import Sparkline from '../components/Sparkline'
 import { toast } from '../components/Toast'
 import { supabase } from '../lib/supabase'
-import { useBacktestRuns, uploadStrategyAndQueue } from '../hooks/useBacktests'
+import { cancelRun, deleteRun, useBacktestRuns, uploadStrategyAndQueue } from '../hooks/useBacktests'
 
 const SYMS = ['MES', 'MNQ', 'M2K']
 // Earliest bar date we have cached locally (Databento pull window).
@@ -121,7 +121,8 @@ export default function Backtest() {
                   <th className="r" style={{ width: 100 }}>MAX DD</th>
                   <th className="r" style={{ width: 70 }}>WR</th>
                   <th className="r" style={{ width: 70 }}>PF</th>
-                  <th className="c" style={{ width: 70 }}>FLAGS</th>
+                  <th className="c" style={{ width: 60 }}>FLAGS</th>
+                  <th className="c" style={{ width: 70 }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -224,7 +225,73 @@ function RunRow({ run }) {
           <span className="chip-hud" style={{ fontSize: 8.5, padding: '1px 5px', color: 'var(--t4)' }}>TS</span>
         )}
       </td>
+      <td className="c" onClick={e => e.stopPropagation()}>
+        <RowActions run={run} />
+      </td>
     </tr>
+  )
+}
+
+function RowActions({ run }) {
+  const [busy, setBusy] = useState(false)
+  const canCancel = run.status === 'queued' || run.status === 'running'
+  const canDelete = run.status === 'done' || run.status === 'failed' || run.status === 'canceled'
+
+  async function handleCancel(e) {
+    e.stopPropagation()
+    if (busy) return
+    setBusy(true)
+    try {
+      await cancelRun(run.id)
+      toast('Run canceled', 'info')
+    } catch (err) {
+      toast(`Cancel failed: ${err.message}`, 'error')
+    } finally { setBusy(false) }
+  }
+  async function handleDelete(e) {
+    e.stopPropagation()
+    if (busy) return
+    if (!confirm(`Delete run "${run.label || run.id.slice(0,8)}"? This removes all trades, equity, and bars for this run.`)) return
+    setBusy(true)
+    try {
+      await deleteRun(run.id)
+      toast('Run deleted', 'info')
+    } catch (err) {
+      toast(`Delete failed: ${err.message}`, 'error')
+    } finally { setBusy(false) }
+  }
+
+  const btn = {
+    background: 'transparent',
+    border: '1px solid var(--hud-edge)',
+    color: 'var(--t3)',
+    padding: '3px 7px',
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    cursor: 'pointer',
+    borderRadius: 0,
+    transition: 'all 0.1s',
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+      {canCancel && (
+        <button title="Cancel run" onClick={handleCancel} disabled={busy}
+          style={{ ...btn, color: 'var(--brand)', borderColor: 'rgba(139,92,246,0.25)' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-dim)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
+          ⊘
+        </button>
+      )}
+      {canDelete && (
+        <button title="Delete run + all data" onClick={handleDelete} disabled={busy}
+          style={{ ...btn, color: 'var(--loss)', borderColor: 'rgba(239,68,68,0.22)' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
+          ✕
+        </button>
+      )}
+    </div>
   )
 }
 
