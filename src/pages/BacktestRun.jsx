@@ -587,9 +587,9 @@ export default function BacktestRun() {
         <HudCard style={{ padding: 18 }}>
           <div className="sec-title">
             daily pnl
-            <span className="count">heat · last 90d</span>
+            <span className="count">heat · last 30d</span>
           </div>
-          <PnlHeatmap daily={dailyPnl} days={90} height={120} />
+          <PnlHeatmap daily={dailyPnl} days={30} height={120} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 18 }}>
             <Mini label="GREEN DAYS" value={Object.values(dailyPnl).filter(v => v > 0).length} tone="pos" />
             <Mini label="RED DAYS" value={Object.values(dailyPnl).filter(v => v < 0).length} tone="neg" />

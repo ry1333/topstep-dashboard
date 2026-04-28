@@ -215,12 +215,12 @@ export default function Dashboard() {
       {/* ── Daily PnL heatmap ─────────────────────────────────────────── */}
       <HudCard style={{ padding: 18 }}>
         <div className="sec-title">
-          daily pnl heat · last 90d
+          daily pnl heat · last 30d
           <span className="count">
             {Object.values(dailyPnl).filter(v => v > 0).length} green · {Object.values(dailyPnl).filter(v => v < 0).length} red
           </span>
         </div>
-        <PnlHeatmap daily={dailyPnl} days={90} height={120} />
+        <PnlHeatmap daily={dailyPnl} days={30} height={120} />
       </HudCard>
 
       {/* ── Open positions + Recent trades ────────────────────────────── */}

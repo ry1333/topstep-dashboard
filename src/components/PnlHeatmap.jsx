@@ -14,7 +14,7 @@ function fmtMoney(n) {
   return s + Math.abs(n).toFixed(0)
 }
 
-export default function PnlHeatmap({ daily = {}, days = 90, cellSize = 14 }) {
+export default function PnlHeatmap({ daily = {}, days = 30, cellSize = 14 }) {
   const today = new Date()
   // Build the array of trading days (Mon-Fri) for the last `days` calendar days,
   // padded backward to start on a Monday so columns are clean weeks.
