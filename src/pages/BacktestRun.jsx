@@ -193,25 +193,88 @@ export default function BacktestRun() {
     }))
   }, [visibleTrades, visibleEquity, currentEquity])
 
+  // ── ML-ready exports ────────────────────────────────────────────
+  // CSV escaping: wrap in quotes if contains comma/quote/newline, escape inner quotes
+  function csvCell(v) {
+    if (v == null) return ''
+    const s = typeof v === 'string' ? v : (typeof v === 'object' ? JSON.stringify(v) : String(v))
+    if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"'
+    return s
+  }
+  function downloadCSV(rows, name) {
+    const text = rows.map(r => r.map(csvCell).join(',')).join('\n')
+    const blob = new Blob([text], { type: 'text/csv;charset=utf-8' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob); a.download = name; a.click()
+  }
+
   function exportTradesCSV() {
-    // Flatten reasoning JSON into separate columns for easy ML training
-    const baseCols = ['entry_ts','exit_ts','side','qty','entry_price','exit_price','pnl_gross','pnl_net','commission','bars_held','mae','mfe','exit_reason']
-    const reasoningCols = ['score','regime','session','min_score','min_into','trades_today','consec_losses']
-    const cols = [...baseCols, ...reasoningCols]
-    const rows = [cols, ...trades.map(t => {
+    // Flat per-trade record. One row = one round-trip trade with its outcome.
+    // Use this to train trade-quality classifiers (P(win) given entry context).
+    const baseCols = ['run_id','entry_ts','exit_ts','symbol','side','qty',
+                      'entry_price','exit_price','pnl_gross','pnl_net','commission',
+                      'bars_held','mae','mfe','exit_reason']
+    const reasoningCols = ['score','regime','session','min_score','min_into',
+                           'trades_today','consec_losses']
+    // Discover all feature keys from any trade's reasoning so we get a wide schema
+    const featureKeys = new Set()
+    trades.forEach(t => {
+      const r = parseReasoning(t.entry_tag)
+      if (r?.features) Object.keys(r.features).forEach(k => featureKeys.add(k))
+    })
+    const featureCols = [...featureKeys].sort().map(k => `feat_${k}`)
+    const cols = [...baseCols, ...reasoningCols, ...featureCols]
+    const rows = [cols]
+    trades.forEach(t => {
       const r = parseReasoning(t.entry_tag) || {}
-      return [...baseCols.map(c => t[c] ?? ''), ...reasoningCols.map(c => r[c] ?? '')]
-    })]
-    download(rows, `trades_${id?.slice(0,8) || 'run'}.csv`)
+      const feats = r.features || {}
+      rows.push([
+        ...baseCols.map(c => c === 'run_id' ? id : (t[c] ?? '')),
+        ...reasoningCols.map(c => r[c] ?? ''),
+        ...[...featureKeys].sort().map(k => feats[k] ?? ''),
+      ])
+    })
+    downloadCSV(rows, `trades_${id?.slice(0,8) || 'run'}.csv`)
   }
+
   function exportEquityCSV() {
-    const cols = ['ts','equity','drawdown']
-    const rows = [cols, ...equity.map(e => cols.map(c => e[c]))]
-    download(rows, `equity_${id?.slice(0,8) || 'run'}.csv`)
+    const cols = ['run_id','ts','equity','drawdown']
+    const rows = [cols, ...equity.map(e => [id, e.ts, e.equity, e.drawdown])]
+    downloadCSV(rows, `equity_${id?.slice(0,8) || 'run'}.csv`)
   }
-  async function exportSignalLogJSON() {
+
+  async function exportSignalsCSV() {
+    // Gold-standard ML training file: every signal the bot considered
+    // (TAKEN + REJECTED), flat, with all features as columns and the
+    // realized outcome label.
     const signals = await fetchSignalLogFromStorage(id)
-    const blob = new Blob([JSON.stringify({ signals }, null, 2)], { type: 'application/json' })
+    if (!signals || signals.length === 0) {
+      alert('No signal log available — re-run the bot to capture signals.')
+      return
+    }
+    const baseCols = ['run_id','created_at','symbol','side','outcome',
+                      'pnl','exit_price','duration_seconds','mfe_ticks','mae_ticks',
+                      'entry_price','contracts','score','regime_mode','session',
+                      'minutes_into_session','min_score_threshold','day_of_week','hour_of_day',
+                      'trades_today','daily_pnl_before','consecutive_losses',
+                      'tp_price','sl_price','bot_version']
+    const featureKeys = new Set()
+    signals.forEach(s => { if (s.features) Object.keys(s.features).forEach(k => featureKeys.add(k)) })
+    const featureCols = [...featureKeys].sort().map(k => `feat_${k}`)
+    const cols = [...baseCols, ...featureCols]
+    const rows = [cols]
+    signals.forEach(s => {
+      rows.push([
+        ...baseCols.map(c => c === 'run_id' ? id : (s[c] ?? '')),
+        ...[...featureKeys].sort().map(k => s.features?.[k] ?? ''),
+      ])
+    })
+    downloadCSV(rows, `signals_${id?.slice(0,8) || 'run'}.csv`)
+  }
+
+  async function exportSignalsJSON() {
+    const signals = await fetchSignalLogFromStorage(id)
+    const blob = new Blob([JSON.stringify({ run_id: id, signals }, null, 2)], { type: 'application/json' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
     a.download = `signals_${id?.slice(0,8) || 'run'}.json`
@@ -275,10 +338,11 @@ export default function BacktestRun() {
           </div>
         </div>
         {trades.length > 0 && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <ExportBtn onClick={exportEquityCSV}>↓ EQUITY.CSV</ExportBtn>
-            <ExportBtn onClick={exportTradesCSV}>↓ TRADES.CSV</ExportBtn>
-            <ExportBtn onClick={exportSignalLogJSON}>↓ SIGNALS.JSON</ExportBtn>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <ExportBtn onClick={exportSignalsCSV} hint="Every signal (taken + rejected) with full feature set — best for ML training">↓ SIGNALS.CSV ★</ExportBtn>
+            <ExportBtn onClick={exportTradesCSV} hint="Round-trip trades with reasoning + features as columns">↓ TRADES.CSV</ExportBtn>
+            <ExportBtn onClick={exportEquityCSV} hint="Bar-by-bar equity curve with drawdown">↓ EQUITY.CSV</ExportBtn>
+            <ExportBtn onClick={exportSignalsJSON} hint="Raw signal log as JSON (preserves nested structures)">↓ SIGNALS.JSON</ExportBtn>
           </div>
         )}
       </div>
@@ -820,9 +884,9 @@ function Mini({ label, value, tone = 'neutral' }) {
   )
 }
 
-function ExportBtn({ onClick, children }) {
+function ExportBtn({ onClick, children, hint }) {
   return (
-    <button onClick={onClick} style={{
+    <button onClick={onClick} title={hint || ''} style={{
       background: 'transparent', color: 'var(--t2)',
       border: '1px solid var(--hud-edge)',
       padding: '7px 14px', fontFamily: 'var(--mono)', fontSize: 10.5,
